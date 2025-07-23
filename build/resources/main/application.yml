@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: auth-core-api
+  datasource:
+    url: jdbc:postgresql://localhost:54329/auth_db
+    username: auth_user
+    password: secret
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # Importante para projetos existentes
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080 # Ou sua URL base
+jwt:
+  access-token-expiration: 3600 # 1 hora
+  refresh-token-expiration: 86400000 # 24 hours
