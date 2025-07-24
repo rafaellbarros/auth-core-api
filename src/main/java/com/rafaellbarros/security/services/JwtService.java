@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.rafaellbarros.security.configs.JwtConfig;
+import com.rafaellbarros.security.models.User;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,11 +18,10 @@ import org.springframework.stereotype.Service;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Getter
 @Service
@@ -30,30 +30,38 @@ public class JwtService {
     private final RSAKey rsaKey;
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
+    private final String clientId;
 
     public JwtService(JwtConfig jwtConfig,
                       @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-                      @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration)
+                      @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration,
+                      @Value("${jwt.client-id}") String clientId)
             throws NoSuchAlgorithmException {
         this.rsaKey = jwtConfig.rsaKey();
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.clientId = clientId;
     }
 
     public String generateToken(UserDetails userDetails) throws JOSEException {
+        User user = (User) userDetails;
         Instant now = Instant.now();
 
         List<String> authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+                .collect(toList());
 
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .subject(userDetails.getUsername())
                 .issuer("auth-core-api")
+                .subject(userDetails.getUsername())
+                .jwtID(UUID.randomUUID().toString()) // ID único para cada token
                 .issueTime(Date.from(now))
+                .notBeforeTime(Date.from(now)) // Não válido antes de agora
                 .expirationTime(Date.from(now.plusSeconds(accessTokenExpiration)))
                 .claim("token_type", "Bearer")
-                .claim("authorities", authorities) // Lista de strings simples
+                .claim("roles", String.join(", ", authorities)) // Padrão OAuth2
+                .claim("client_id", clientId)
+                .claim("sid", UUID.randomUUID().toString()) // Session ID
                 .build();
 
         return signToken(claims);
@@ -90,7 +98,6 @@ public class JwtService {
             SignedJWT signedJWT = SignedJWT.parse(token);
             JWSVerifier verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
 
-            // Verifica assinatura e expiração
             return signedJWT.verify(verifier) &&
                     !signedJWT.getJWTClaimsSet().getExpirationTime().before(new Date());
         } catch (JOSEException | ParseException e) {
@@ -110,8 +117,8 @@ public class JwtService {
 
             return authorities.stream()
                     .map(Object::toString)
-                    .map(auth -> new SimpleGrantedAuthority(auth))
-                    .collect(Collectors.toList());
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(toList());
         } catch (Exception e) {
             return Collections.emptyList();
         }

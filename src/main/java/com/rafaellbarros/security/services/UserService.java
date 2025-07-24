@@ -57,7 +57,7 @@ public class UserService implements UserDetailsService {
                 .collect(Collectors.toSet());
 
         return UserResponseDTO.builder()
-                .id(user.getId())
+                .id(user.getId().toString())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .enabled(user.isEnabled())

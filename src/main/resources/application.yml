@@ -1,6 +1,9 @@
 spring:
   application:
     name: auth-core-api
+  output:
+    ansi:
+      enabled: ALWAYS
   datasource:
     url: jdbc:postgresql://localhost:54329/auth_db
     username: auth_user
@@ -23,9 +26,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080 # Ou sua URL base
+          issuer-uri: http://localhost:8080
 jwt:
   access-token-expiration: 3600 # 1 hora
   refresh-token-expiration: 86400000 # 24 hours
   client-id: ${CLIENT_ID:default-client}
-  client-secret: ${CLIENT_SECRET:default-secret} # Nunca armazene em plain text
+  client-secret: ${CLIENT_SECRET:0a9f34c448a4bb29e6f296695654e31d047d2e886791dfd83c120f848b518065} #default-secret

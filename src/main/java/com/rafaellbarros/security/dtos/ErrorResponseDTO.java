@@ -14,11 +14,13 @@ import java.time.LocalDateTime;
 public class ErrorResponseDTO {
 
     private String message;
+    private int statusCode;
     private String errorCode;
     private LocalDateTime timestamp;
     
-    public ErrorResponseDTO(String message) {
+    public ErrorResponseDTO(String message, int statusCode) {
         this.message = message;
         this.timestamp = LocalDateTime.now();
+        this.statusCode = statusCode;
     }
 }

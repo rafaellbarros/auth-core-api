@@ -1,7 +1,9 @@
 package com.rafaellbarros.security.configs;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
@@ -10,26 +12,32 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Configuration
 public class AuthorizationServerConfig {
 
-    // Configura um cliente padrão (em memória)
+    @Value("${jwt.client-id}")
+    private String clientId;
+
+    @Value("${jwt.client-secret}")
+    private String clientSecret;
+
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient client = RegisteredClient
-                .withId("1")
-                .clientId("client-id")  // Identificador do cliente
-                .clientSecret("{noop}client-secret")  // Senha (sem hash para simplificar)
+        RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId(clientId)
+                .clientSecret("{bcrypt}" + new BCryptPasswordEncoder().encode(clientSecret))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)  // Para serviços
-                .authorizationGrantType(AuthorizationGrantType.PASSWORD)  // Para usuários
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)  // Refresh Token
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofHours(1))  // Token expira em 1h
-                        .refreshTokenTimeToLive(Duration.ofDays(7))  // Refresh Token expira em 7 dias
+                        .accessTokenTimeToLive(Duration.ofMinutes(15))
+                        .refreshTokenTimeToLive(Duration.ofHours(24))
+                        .reuseRefreshTokens(false)
                         .build())
                 .build();
+
 
         return new InMemoryRegisteredClientRepository(client);
     }
